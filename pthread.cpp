@@ -43,7 +43,10 @@ static long int i64_ptr_mangle(long int p){
         );
         return ret;
 }
-
+void wrapper_funcition(){
+    Thread_Pool.front().thread_start_routine(Thread_Pool.front().thread_arg);
+    pthread_exit
+}
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg){
     
     //initialize thread subsystem when pthread_create is called for the first time
