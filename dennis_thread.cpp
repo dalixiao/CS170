@@ -5,11 +5,9 @@
 #include <pthread.h>
 #include <setjmp.h>
 
-int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg);
 
 void pthread_exit(void *value_ptr);
     
-pthread_t pthread_self(void);
 
 
 enum State{
@@ -32,7 +30,6 @@ typedef struct {
 
 
 
-#include "threads.h"
 #include <stdlib.h>
 #include <stdio.h> 
 #include <sys/time.h>

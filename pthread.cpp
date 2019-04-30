@@ -19,6 +19,7 @@
 
 struct TCB{
     pthread_t id;
+    char* ESP;
     jmp_buf jb;
     STATUS status;
     void *(*thread_start_routine)(void*);
@@ -28,6 +29,7 @@ struct TCB{
 static std::queue<TCB> Thread_Pool;
 static int Initialized = 0;
 static int numThreads = 0;
+
 // mangle function
 static long int i64_ptr_mangle(long int p){
     long int ret;
@@ -43,7 +45,7 @@ static long int i64_ptr_mangle(long int p){
 }
 
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg){
-
+    
     //initialize thread subsystem when pthread_create is called for the first time
     if(Initialized == 0){
         Initialized = 1;
@@ -69,6 +71,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_
 
         /* storing main routine into TCB */
         TCB MainThread;
+        MainThread.ESP = NULL;
         MainThread.id = numThreads;
         MainThread.status = RUNNING;
         MainThread.thread_arg = NULL;
@@ -84,5 +87,23 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_
     /* create new threads */
     TCB NewThread;
     NewThread.id = numThreads;
+    NewThread.status = RUNNING;
+    NewThread.thread_start_routine = NULL;
+    NewThread.thread_arg = NULL;
+    setjmp(NewThread.jb);
+
+    /* allocate new stack */
+    /* ESP is the bottom of the stack */
+    NewThread.ESP = (char*) malloc(32767);
+    (int*)(NewThread.ESP+32759) = int(pthread_exit);
+
+    //Make sure that everytime the Wrapper function is passed onto jmpbuf[7]
+    void (*wrapper_function_ptr)() = &wrapper_function;
+    NewThread.thread_buffer[0].__jmpbuf[6] = i64_ptr_mangle((unsigned long)(new_sp + 32767 / 8 - 2));
+	NewThread.thread_buffer[0].__jmpbuf[7] = i64_ptr_mangle((unsigned long)wrapper_function_ptr);
     
+    *thread = NewThread.thread_id;
+    Thread_Pool.push(NewThread);
+    numThreads++;
+    return 0;
 }
